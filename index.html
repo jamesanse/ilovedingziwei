@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>这不是木马</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+</head>
+<body>
+    <!-- Background Music -->
+    <audio id="bgMusic" loop autoplay muted>
+        <source src="music.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Music Control Button -->
+    <button class="music-btn" id="musicBtn" title="Toggle Music">🎵</button>
+
+    <!-- Site Header -->
+    <h1 class="site-title">这不是木马</h1>
+
+    <div class="container">
+        <div class="envelope" id="envelope">
+            <div class="envelope-inner">
+                <div class="envelope-flap"></div>
+                <div class="envelope-body">
+                    <p class="envelope-text">写给丁紫微的情书</p>
+                    <p class="envelope-date">2026.06.28</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeBtn">&times;</span>
+            <div class="love-letter">
+                <h2>给丁紫微的情书</h2>
+                <p>
+                    你说<br>
+                    看过的消息都会删掉<br>
+                    <br>
+                    所以<br>
+                    我买下了这个域名<br>
+                    <br>
+                    只想让你知道<br>
+                    我的爱<br>
+                    永远没有删除键<br>
+                    <br>
+                    你说<br>
+                    现实治好了你的恋爱脑<br>
+                    <br>
+                    我现在只想知道<br>
+                    你的心<br>
+                    有没有为我动摇过一秒<br>
+                    <br>
+                    生病那天<br>
+                    我看清了生命的有限<br>
+                    <br>
+                    因为害怕来不及<br>
+                    我把这里买下了九十九年<br>
+                    <br>
+                    就算有一天<br>
+                    我先退场了<br>
+                    <br>
+                    世界上也还有一个地方<br>
+                    锁着<br>
+                    只属于你和我的秘密<br>
+                </p>
+                <p style="text-align: right; margin-top: 2rem;">
+                    只有你知道我是谁<br>
+                    ❤️
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Roll -->
+    <div class="camera-roll">
+        <div class="swiper" id="cameraRoll">
+            <div class="swiper-wrapper" id="swiperWrapper">
+                <!-- Images will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
