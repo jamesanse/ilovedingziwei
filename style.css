@@ -50,6 +50,13 @@ body {
     position: relative;
     transition: all 0.3s ease;
     animation: float 3s ease-in-out infinite;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .envelope:hover {
@@ -66,52 +73,30 @@ body {
     }
 }
 
-.envelope-inner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-.envelope-flap {
-    width: 0;
-    height: 0;
-    border-left: 150px solid transparent;
-    border-right: 150px solid transparent;
-    border-top: 100px solid #ff69b4;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+.envelope-svg {
+    width: 130px;
+    height: 130px;
     transition: all 0.3s ease;
-    z-index: 10;
-    pointer-events: none;
 }
 
-.envelope:hover .envelope-flap {
-    border-top-color: #ff1493;
+.envelope:hover .envelope-svg {
+    fill: #ff1493;
 }
 
-.envelope-body {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, #fff5f9 0%, white 100%);
-    border: 2px solid #ffb6d9;
-    border-radius: 10px;
+.envelope-content {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: center;
-    padding: 60px 20px 20px 20px;
+    justify-content: center;
     text-align: center;
-    position: relative;
+    width: 100%;
 }
 
 .envelope-text {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: bold;
     color: #ff1493;
     letter-spacing: 1px;
-    transform: translateY(10px);
     margin: 0;
 }
 
@@ -120,8 +105,6 @@ body {
     color: #ff69b4;
     margin: 0;
     letter-spacing: 0.5px;
-    align-self: flex-end;
-    margin-top: auto;
 }
 
 /* Modal Styles */
@@ -216,14 +199,13 @@ body {
         height: 170px;
     }
 
-    .envelope-flap {
-        border-left: 125px solid transparent;
-        border-right: 125px solid transparent;
-        border-top: 85px solid #ff69b4;
+    .envelope-svg {
+        width: 110px;
+        height: 110px;
     }
 
     .envelope-text {
-        font-size: 20px;
+        font-size: 16px;
     }
 
     .envelope-date {
@@ -252,19 +234,18 @@ body {
         max-width: 85%;
     }
 
-    .camera-roll {
+    .envelope {
         width: 220px;
         height: 150px;
     }
 
-    .envelope-flap {
-        border-left: 110px solid transparent;
-        border-right: 110px solid transparent;
-        border-top: 75px solid #ff69b4;
+    .envelope-svg {
+        width: 95px;
+        height: 95px;
     }
 
     .envelope-text {
-        font-size: 18px;
+        font-size: 14px;
     }
 
     .envelope-date {

@@ -6,6 +6,9 @@ const bgMusic = document.getElementById('bgMusic');
 const musicBtn = document.getElementById('musicBtn');
 const cameraRoll = document.getElementById('cameraRoll');
 
+// Set initial volume
+bgMusic.volume = 0.5;
+
 // Music control - play on button click
 function toggleMusic() {
     if (bgMusic.paused) {
@@ -20,7 +23,14 @@ function toggleMusic() {
 }
 
 // Music button click
-musicBtn.addEventListener('click', toggleMusic);
+if (musicBtn) {
+    musicBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleMusic();
+    });
+} else {
+    console.error('Music button not found');
+}
 
 // Update button when music ends
 bgMusic.addEventListener('ended', function() {
