@@ -7,13 +7,15 @@ exports.handler = async (event) => {
         
         if (body.action === 'getPresignedUrl') {
             // Generate pre-signed URL for upload
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            const fileExtension = body.fileExtension || 'jpg';
+            const mimeType = body.mimeType || 'image/jpeg';
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
             
             const params = {
                 Bucket: 'dingziwei-app-bucket',
                 Key: `uploads/${fileName}`,
                 Expires: 900, // 15 minutes
-                ContentType: 'image/jpeg'
+                ContentType: mimeType
             };
             
             const uploadURL = s3.getSignedUrl('putObject', params);

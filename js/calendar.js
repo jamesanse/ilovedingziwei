@@ -90,8 +90,23 @@ imageInput.addEventListener('change', async function(e) {
         uploadStatus.className = 'upload-status';
         
         try {
+            // Extract file extension from MIME type or filename
+            let fileExtension = 'jpg';
+            if (file.type) {
+                const mimeToExt = {
+                    'image/jpeg': 'jpg',
+                    'image/jpg': 'jpg',
+                    'image/png': 'png',
+                    'image/webp': 'webp',
+                    'image/heic': 'heic',
+                    'image/heif': 'heif',
+                    'image/gif': 'gif'
+                };
+                fileExtension = mimeToExt[file.type] || file.type.split('/')[1] || 'jpg';
+            }
+            
             // Step 1: Get pre-signed URL from Lambda
-            const presignedData = await getPresignedUrl();
+            const presignedData = await getPresignedUrl(fileExtension, file.type);
             const { uploadURL, fileName, s3Path } = presignedData;
             
             // Step 2: Upload file to S3 directly

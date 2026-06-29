@@ -27,7 +27,7 @@ async function fetchCompletedDays() {
 }
 
 // Get pre-signed URL for S3 upload
-async function getPresignedUrl() {
+async function getPresignedUrl(fileExtension, mimeType) {
     try {
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
@@ -35,7 +35,9 @@ async function getPresignedUrl() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                action: 'getPresignedUrl'
+                action: 'getPresignedUrl',
+                fileExtension: fileExtension || 'jpg',
+                mimeType: mimeType || 'image/jpeg'
             })
         });
         
