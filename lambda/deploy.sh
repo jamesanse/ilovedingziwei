@@ -275,13 +275,14 @@ aws apigateway put-method-response \
     --response-parameters "method.response.header.Access-Control-Allow-Headers=true,method.response.header.Access-Control-Allow-Methods=true,method.response.header.Access-Control-Allow-Origin=true" \
     --region $REGION > /dev/null 2>&1 || true
 
-# Create integration response with CORS headers
+# Create integration response with CORS headers and templates
 aws apigateway put-integration-response \
     --rest-api-id $API_ID \
     --resource-id $UPLOAD_RESOURCE \
     --http-method OPTIONS \
     --status-code 200 \
     --response-parameters "method.response.header.Access-Control-Allow-Headers='Content-Type,Authorization',method.response.header.Access-Control-Allow-Methods='GET,POST,OPTIONS',method.response.header.Access-Control-Allow-Origin='*'" \
+    --response-templates "application/json='{}'" \
     --region $REGION > /dev/null 2>&1 || true
 
 echo -e "${GREEN}✓ CORS configured${NC}"
