@@ -4,26 +4,15 @@ This folder contains AWS Lambda functions for the "dingziwei.com" website, using
 
 ## ⚡ Quick Start
 
-**Choose one deployment method:**
+Run the deployment script:
 
-1. **Bash Script (Easiest):**
-   ```bash
-   cd lambda && ./deploy.sh
-   ```
+```bash
+cd lambda && ./deploy.sh
+```
 
-2. **CloudFormation:**
-   ```bash
-   aws cloudformation create-stack \
-     --stack-name dingziwei-stack \
-     --template-body file://lambda/template.yaml \
-     --capabilities CAPABILITY_NAMED_IAM \
-     --region ap-east-1
-   ```
+⏱️ Wait 2-3 minutes for completion
 
-3. **Manual (AWS Console):**
-   - See [DEPLOYMENT.md](DEPLOYMENT.md) → Method 3
-
-**→ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions**
+See [DEPLOYMENT.md](DEPLOYMENT.md) or [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for detailed instructions
 
 ## Architecture
 

@@ -99,24 +99,14 @@ aws logs tail /aws/lambda/getCompletedDays --follow
 
 ---
 
-## 🛠️ Alternative Deployment Methods
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for:
-- CloudFormation deployment
-- Manual AWS Console setup
-- Troubleshooting guide
-- Verification tests
-
----
-
-## 📝 File Structure
+## � File Structure
 
 ```
 lambda/
 ├── deploy.sh              # Bash deployment script ⭐
-├── template.yaml          # CloudFormation template
 ├── DEPLOYMENT.md          # Complete guide
-├── README.md              # This folder's readme
+├── README.md              # Folder readme
+├── QUICK-REFERENCE.md     # This file
 ├── uploadFunc/
 │   ├── index.js
 │   ├── package.json
@@ -125,7 +115,6 @@ lambda/
 │   ├── index.js
 │   ├── package.json
 │   └── README.md
-└── QUICK-REFERENCE.md     # This file
 ```
 
 ---
