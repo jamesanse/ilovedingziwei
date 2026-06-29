@@ -39,6 +39,190 @@ body {
     white-space: nowrap;
 }
 
+/* Daily Calendar Section */
+.daily-section {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 25px rgba(255, 20, 147, 0.15);
+    z-index: 95;
+    max-width: 95%;
+    max-height: none;
+    overflow: visible;
+    border-bottom: 3px solid #ffb6d9;
+    margin-bottom: 30px;
+}
+
+.daily-section::after {
+    content: '';
+    position: fixed;
+    top: 340px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #ffb6d9, transparent);
+    z-index: 90;
+}
+
+.daily-title {
+    font-size: 18px;
+    color: #ff1493;
+    margin-bottom: 12px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.daily-month {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+    gap: 8px;
+    max-width: 350px;
+    margin: 0 auto;
+}
+
+.calendar-day {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #ffb6d9;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.calendar-day:hover {
+    background: #fff5f9;
+    border-color: #ff1493;
+}
+
+.calendar-day.completed {
+    background: #ff1493;
+    color: white;
+    border-color: #ff1493;
+}
+
+.calendar-day.completed::after {
+    content: '✓';
+    font-size: 14px;
+}
+
+.calendar-day.today {
+    background: #ffe4f0;
+    border-color: #ff1493;
+    border-width: 3px;
+    font-weight: 700;
+    color: #ff1493;
+    box-shadow: 0 0 8px rgba(255, 20, 147, 0.3);
+}
+
+/* Daily Upload Modal */
+.daily-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1200;
+    justify-content: center;
+    align-items: center;
+}
+
+.daily-modal.show {
+    display: flex;
+}
+
+.daily-modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.daily-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.daily-modal-close:hover {
+    color: #ff1493;
+}
+
+.daily-task {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.daily-upload-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.daily-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);
+}
+
+.upload-status {
+    font-size: 14px;
+    color: #666;
+    margin-top: 12px;
+    text-align: center;
+}
+
+.upload-status.success {
+    color: #28a745;
+}
+
+.upload-status.error {
+    color: #dc3545;
+}
+
 /* Envelope Styles */
 .envelope {
     width: 300px;
@@ -230,6 +414,48 @@ body {
         font-size: 11px;
         width: 80px;
     }
+
+    .daily-section {
+        top: 85px;
+        padding: 15px;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .daily-title {
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+
+    .daily-month {
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+
+    .calendar-grid {
+        max-width: 300px;
+        gap: 6px;
+    }
+
+    .calendar-day {
+        width: 26px;
+        height: 26px;
+        font-size: 10px;
+    }
+
+    .daily-modal-content {
+        padding: 25px;
+        max-width: 350px;
+    }
+
+    .daily-task {
+        font-size: 15px;
+    }
+
+    .daily-upload-btn {
+        padding: 10px;
+        font-size: 15px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -270,6 +496,51 @@ body {
     .love-letter p {
         font-size: 13px;
         text-align: left;
+    }
+
+    .daily-section {
+        top: 80px;
+        padding: 12px;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .daily-title {
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .daily-month {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+
+    .calendar-grid {
+        max-width: 280px;
+        gap: 5px;
+        grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
+    }
+
+    .calendar-day {
+        width: 24px;
+        height: 24px;
+        font-size: 9px;
+        border-width: 1.5px;
+    }
+
+    .daily-modal-content {
+        padding: 20px 15px;
+        max-width: 90%;
+    }
+
+    .daily-task {
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .daily-upload-btn {
+        padding: 10px;
+        font-size: 14px;
     }
 }
 

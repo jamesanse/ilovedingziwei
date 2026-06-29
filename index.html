@@ -22,6 +22,24 @@
     <!-- Site Header -->
     <h1 class="site-title">这不是木马</h1>
 
+    <!-- Daily Calendar Section -->
+    <div class="daily-section">
+        <h2 class="daily-title">每天打卡 - 女主养成</h2>
+        <div class="daily-month" id="dailyMonth"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <!-- Daily Upload Modal -->
+    <div class="daily-modal" id="dailyModal">
+        <div class="daily-modal-content">
+            <button class="daily-modal-close" id="dailyModalClose">&times;</button>
+            <p class="daily-task">发一篇关于你去过地方的小红书， 配上美图和文字</p>
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            <button class="daily-upload-btn" id="dailyUploadBtn">完成和上传图片</button>
+            <p class="upload-status" id="uploadStatus"></p>
+        </div>
+    </div>
+
     <div class="container">
         <div class="envelope" id="envelope">
             <svg class="envelope-svg" fill="#ff69b4" viewBox="0 0 45.805 45.805" xmlns="http://www.w3.org/2000/svg">
@@ -51,7 +69,7 @@
         <div class="modal-content">
             <span class="close-btn" id="closeBtn">&times;</span>
             <div class="love-letter">
-                <h2>给丁紫微的情书</h2>
+                <h2>给宝宝的忠告</h2>
                 <p>
                     你说<br>
                     看过的消息都会删掉<br>

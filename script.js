@@ -186,3 +186,141 @@ document.addEventListener('keydown', function(event) {
         modal.style.display = 'none';
     }
 });
+
+// ===== Daily Calendar Logic =====
+const dailyModal = document.getElementById('dailyModal');
+const dailyModalClose = document.getElementById('dailyModalClose');
+const dailyUploadBtn = document.getElementById('dailyUploadBtn');
+const imageInput = document.getElementById('imageInput');
+const uploadStatus = document.getElementById('uploadStatus');
+const calendarGrid = document.getElementById('calendarGrid');
+
+let currentSelectedDay = null;
+
+// Chinese month names
+const chineseMonths = [
+    '一月', '二月', '三月', '四月', '五月', '六月',
+    '七月', '八月', '九月', '十月', '十一月', '十二月'
+];
+
+// Display current month in Chinese
+function displayMonth() {
+    const now = new Date();
+    const chinaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const month = chinaTime.getMonth();
+    const year = chinaTime.getFullYear();
+    
+    const dailyMonth = document.getElementById('dailyMonth');
+    dailyMonth.textContent = `${year}年 ${chineseMonths[month]}`;
+}
+
+// Generate calendar
+function generateCalendar() {
+    calendarGrid.innerHTML = '';
+    
+    // Get current date in China timezone (UTC+8)
+    const now = new Date();
+    const chinaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const currentDay = chinaTime.getDate();
+    
+    for (let i = 1; i <= 31; i++) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-day';
+        dayEl.textContent = i;
+        dayEl.dataset.day = i;
+        
+        // Highlight today
+        if (i === currentDay) {
+            dayEl.classList.add('today');
+        }
+        
+        // Check localStorage for completed days
+        if (isDateCompleted(i)) {
+            dayEl.classList.add('completed');
+        }
+        
+        dayEl.addEventListener('click', function() {
+            currentSelectedDay = i;
+            dailyModal.classList.add('show');
+            uploadStatus.textContent = '';
+            imageInput.value = '';
+        });
+        
+        calendarGrid.appendChild(dayEl);
+    }
+}
+
+// Check if a day is completed
+function isDateCompleted(day) {
+    const completed = localStorage.getItem('dailyCompleted');
+    if (!completed) return false;
+    const completedDays = JSON.parse(completed);
+    return completedDays.includes(day);
+}
+
+// Mark day as completed
+function markDayCompleted(day) {
+    let completed = localStorage.getItem('dailyCompleted');
+    let completedDays = completed ? JSON.parse(completed) : [];
+    
+    if (!completedDays.includes(day)) {
+        completedDays.push(day);
+        localStorage.setItem('dailyCompleted', JSON.stringify(completedDays));
+    }
+    
+    // Update UI
+    const dayEl = document.querySelector(`[data-day="${day}"]`);
+    if (dayEl) {
+        dayEl.classList.add('completed');
+    }
+}
+
+// Close daily modal
+dailyModalClose.addEventListener('click', function() {
+    dailyModal.classList.remove('show');
+});
+
+dailyModal.addEventListener('click', function(e) {
+    if (e.target === dailyModal) {
+        dailyModal.classList.remove('show');
+    }
+});
+
+// Handle upload button click
+dailyUploadBtn.addEventListener('click', function() {
+    imageInput.click();
+});
+
+// Handle file selection
+imageInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        uploadStatus.textContent = '上传中...';
+        uploadStatus.className = 'upload-status';
+        
+        // Simulate upload delay
+        setTimeout(function() {
+            uploadStatus.textContent = '✓ 上传成功！';
+            uploadStatus.className = 'upload-status success';
+            
+            // Mark day as completed
+            markDayCompleted(currentSelectedDay);
+            
+            // Close modal after 2 seconds
+            setTimeout(function() {
+                dailyModal.classList.remove('show');
+            }, 1500);
+        }, 1000);
+    }
+});
+
+// Initialize calendar on page load
+displayMonth();
+generateCalendar();
+
+// Close daily modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && dailyModal.classList.contains('show')) {
+        dailyModal.classList.remove('show');
+    }
+});
