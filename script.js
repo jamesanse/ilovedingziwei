@@ -195,7 +195,13 @@ const imageInput = document.getElementById('imageInput');
 const uploadStatus = document.getElementById('uploadStatus');
 const calendarGrid = document.getElementById('calendarGrid');
 
+// API Gateway endpoints for Lambda functions
+const API_BASE_URL = 'https://0awq3ahyhi.execute-api.ap-east-1.amazonaws.com/prod';
+const UPLOAD_API_URL = API_BASE_URL + '/upload';
+const COMPLETED_DAYS_API_URL = API_BASE_URL + '/completed-days';
+
 let currentSelectedDay = null;
+let completedDaysCache = [];
 
 // Chinese month names
 const chineseMonths = [
@@ -212,6 +218,28 @@ function displayMonth() {
     
     const dailyMonth = document.getElementById('dailyMonth');
     dailyMonth.textContent = `${year}年 ${chineseMonths[month]}`;
+}
+
+// Fetch completed days from Lambda
+async function fetchCompletedDays() {
+    try {
+        const response = await fetch(COMPLETED_DAYS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            completedDaysCache = data.completedDays;
+            return data.completedDays;
+        }
+    } catch (error) {
+        console.error('Error fetching completed days:', error);
+    }
+    return [];
 }
 
 // Generate calendar
@@ -239,8 +267,8 @@ function generateCalendar() {
             dayEl.classList.add('today');
         }
         
-        // Check localStorage for completed days
-        if (isDateCompleted(i)) {
+        // Check if day is completed
+        if (completedDaysCache.includes(i)) {
             dayEl.classList.add('completed');
         }
         
@@ -255,28 +283,14 @@ function generateCalendar() {
     }
 }
 
-// Check if a day is completed
-function isDateCompleted(day) {
-    const completed = localStorage.getItem('dailyCompleted');
-    if (!completed) return false;
-    const completedDays = JSON.parse(completed);
-    return completedDays.includes(day);
-}
-
-// Mark day as completed
+// Mark day as completed in UI
 function markDayCompleted(day) {
-    let completed = localStorage.getItem('dailyCompleted');
-    let completedDays = completed ? JSON.parse(completed) : [];
-    
-    if (!completedDays.includes(day)) {
-        completedDays.push(day);
-        localStorage.setItem('dailyCompleted', JSON.stringify(completedDays));
-    }
-    
-    // Update UI
     const dayEl = document.querySelector(`[data-day="${day}"]`);
-    if (dayEl) {
+    if (dayEl && !dayEl.classList.contains('completed')) {
         dayEl.classList.add('completed');
+        if (!completedDaysCache.includes(day)) {
+            completedDaysCache.push(day);
+        }
     }
 }
 
@@ -297,31 +311,87 @@ dailyUploadBtn.addEventListener('click', function() {
 });
 
 // Handle file selection
-imageInput.addEventListener('change', function(e) {
+imageInput.addEventListener('change', async function(e) {
     const file = e.target.files[0];
     if (file) {
-        uploadStatus.textContent = '上传中...';
+        uploadStatus.textContent = '获取上传链接...';
         uploadStatus.className = 'upload-status';
         
-        // Simulate upload delay
-        setTimeout(function() {
-            uploadStatus.textContent = '✓ 上传成功！';
-            uploadStatus.className = 'upload-status success';
+        try {
+            // Step 1: Get pre-signed URL from Lambda
+            const presignedResponse = await fetch(UPLOAD_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'getPresignedUrl'
+                })
+            });
             
-            // Mark day as completed
-            markDayCompleted(currentSelectedDay);
+            const presignedData = await presignedResponse.json();
+            const { uploadURL, fileName, s3Path } = presignedData;
             
-            // Close modal after 2 seconds
-            setTimeout(function() {
-                dailyModal.classList.remove('show');
-            }, 1500);
-        }, 1000);
+            // Step 2: Upload file to S3 directly
+            uploadStatus.textContent = '上传中...';
+            const uploadResponse = await fetch(uploadURL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type
+                },
+                body: file
+            });
+            
+            if (!uploadResponse.ok) {
+                throw new Error('S3 upload failed');
+            }
+            
+            // Step 3: Record upload to tracking file
+            uploadStatus.textContent = '保存记录...';
+            const recordResponse = await fetch(UPLOAD_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'recordUpload',
+                    fileName: fileName,
+                    s3Path: s3Path,
+                    day: currentSelectedDay
+                })
+            });
+            
+            const recordData = await recordResponse.json();
+            if (recordData.success) {
+                uploadStatus.textContent = '✓ 上传成功！';
+                uploadStatus.className = 'upload-status success';
+                
+                // Mark day as completed
+                markDayCompleted(currentSelectedDay);
+                
+                // Close modal after 2 seconds
+                setTimeout(function() {
+                    dailyModal.classList.remove('show');
+                }, 1500);
+            } else {
+                throw new Error(recordData.error || 'Failed to record upload');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            uploadStatus.textContent = '✗ 上传失败: ' + error.message;
+            uploadStatus.className = 'upload-status error';
+        }
     }
 });
 
 // Initialize calendar on page load
-displayMonth();
-generateCalendar();
+async function initializeCalendar() {
+    displayMonth();
+    await fetchCompletedDays();
+    generateCalendar();
+}
+
+initializeCalendar();
 
 // Close daily modal on escape key
 document.addEventListener('keydown', function(event) {

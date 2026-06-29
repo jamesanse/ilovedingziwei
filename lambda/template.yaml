@@ -1,0 +1,302 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for dingziwei.com Lambda backend'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment name
+  
+  S3Bucket:
+    Type: String
+    Default: dingziwei-app-bucket
+    Description: S3 bucket name
+
+Resources:
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: dingziwei-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3Bucket}'
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/*'
+
+  # uploadFunc Lambda
+  UploadFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: uploadFunc
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Description: Handle S3 uploads and track completed days
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const s3 = new AWS.S3();
+          const crypto = require('crypto');
+          
+          const BUCKET = 'dingziwei-app-bucket';
+          
+          exports.handler = async (event) => {
+              try {
+                  const body = typeof event.body === 'string' ? JSON.parse(event.body) : event;
+                  const action = body.action;
+                  
+                  if (action === 'getPresignedUrl') {
+                      const fileName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.jpg`;
+                      const s3Path = `s3://${BUCKET}/uploads/${fileName}`;
+                      
+                      const uploadURL = s3.getSignedUrl('putObject', {
+                          Bucket: BUCKET,
+                          Key: `uploads/${fileName}`,
+                          Expires: 15 * 60,
+                          ContentType: 'image/jpeg'
+                      });
+                      
+                      return {
+                          statusCode: 200,
+                          headers: { 'Access-Control-Allow-Origin': '*' },
+                          body: JSON.stringify({
+                              uploadURL,
+                              fileName,
+                              s3Path
+                          })
+                      };
+                  }
+                  
+                  if (action === 'recordUpload') {
+                      const { fileName, s3Path, day } = body;
+                      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                      const month = String(now.getMonth() + 1).padStart(2, '0');
+                      const year = now.getFullYear();
+                      const trackingFile = `tracking/${year}-${month}.txt`;
+                      
+                      let content = '';
+                      try {
+                          const existing = await s3.getObject({ Bucket: BUCKET, Key: trackingFile }).promise();
+                          content = existing.Body.toString('utf-8');
+                      } catch (e) {
+                          if (e.code !== 'NoSuchKey') throw e;
+                      }
+                      
+                      content += `${day}|${s3Path}\n`;
+                      await s3.putObject({ Bucket: BUCKET, Key: trackingFile, Body: content }).promise();
+                      
+                      return {
+                          statusCode: 200,
+                          headers: { 'Access-Control-Allow-Origin': '*' },
+                          body: JSON.stringify({
+                              success: true,
+                              message: 'Upload recorded',
+                              fileName,
+                              day
+                          })
+                      };
+                  }
+                  
+                  return {
+                      statusCode: 400,
+                      body: JSON.stringify({ error: 'Invalid action' })
+                  };
+              } catch (error) {
+                  return {
+                      statusCode: 500,
+                      body: JSON.stringify({ error: error.message })
+                  };
+              }
+          };
+
+  # getCompletedDays Lambda
+  CompletedDaysFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: getCompletedDays
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Description: Get completed days from S3 tracking
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const s3 = new AWS.S3();
+          
+          const BUCKET = 'dingziwei-app-bucket';
+          
+          exports.handler = async (event) => {
+              try {
+                  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const year = now.getFullYear();
+                  const trackingFile = `tracking/${year}-${month}.txt`;
+                  
+                  let completedDays = [];
+                  try {
+                      const data = await s3.getObject({ Bucket: BUCKET, Key: trackingFile }).promise();
+                      const content = data.Body.toString('utf-8');
+                      const lines = content.trim().split('\n').filter(l => l);
+                      const daySet = new Set();
+                      lines.forEach(line => {
+                          const day = parseInt(line.split('|')[0]);
+                          if (!isNaN(day)) daySet.add(day);
+                      });
+                      completedDays = Array.from(daySet).sort((a, b) => a - b);
+                  } catch (e) {
+                      if (e.code !== 'NoSuchKey') throw e;
+                  }
+                  
+                  return {
+                      statusCode: 200,
+                      headers: { 'Access-Control-Allow-Origin': '*' },
+                      body: JSON.stringify({
+                          success: true,
+                          month: `${year}-${month}`,
+                          completedDays,
+                          count: completedDays.length
+                      })
+                  };
+              } catch (error) {
+                  return {
+                      statusCode: 500,
+                      body: JSON.stringify({ error: error.message })
+                  };
+              }
+          };
+
+  # API Gateway
+  DingziweiAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: dingziwei-api
+      Description: API for dingziwei.com
+
+  # Upload Resource
+  UploadResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ParentId: !GetAtt DingziweiAPI.RootResourceId
+      PathPart: upload
+
+  # Upload Method
+  UploadMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ResourceId: !Ref UploadResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UploadFunction.Arn}/invocations'
+
+  # Upload Lambda Permission
+  UploadLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DingziweiAPI}/*'
+
+  # Completed Days Resource
+  CompletedDaysResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ParentId: !GetAtt DingziweiAPI.RootResourceId
+      PathPart: completed-days
+
+  # Completed Days Method
+  CompletedDaysMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ResourceId: !Ref CompletedDaysResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CompletedDaysFunction.Arn}/invocations'
+
+  # Completed Days Lambda Permission
+  CompletedDaysLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CompletedDaysFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DingziweiAPI}/*'
+
+  # CORS Support for Upload
+  UploadCorsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ResourceId: !Ref UploadResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+
+  # CORS Support for Completed Days
+  CompletedDaysCorsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      ResourceId: !Ref CompletedDaysResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+
+  # API Deployment
+  APIDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - UploadMethod
+      - CompletedDaysMethod
+      - UploadCorsMethod
+      - CompletedDaysCorsMethod
+    Properties:
+      RestApiId: !Ref DingziweiAPI
+      StageName: !Ref Environment
+
+Outputs:
+  APIEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${DingziweiAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: DingziweiAPIEndpoint
+  
+  UploadFunctionArn:
+    Description: uploadFunc Lambda ARN
+    Value: !GetAtt UploadFunction.Arn
+  
+  CompletedDaysFunctionArn:
+    Description: getCompletedDays Lambda ARN
+    Value: !GetAtt CompletedDaysFunction.Arn

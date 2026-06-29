@@ -1,6 +1,6 @@
 # uploadFunc Lambda
 
-This Lambda function handles S3 uploads and records metadata to RDS.
+This Lambda function handles S3 uploads and tracks completed days using S3 text files.
 
 ## Actions
 
@@ -24,7 +24,7 @@ Generates a pre-signed URL for uploading an image to S3.
 ```
 
 ### 2. recordUpload
-Records upload metadata to RDS database.
+Records upload to a month-based tracking text file in S3.
 
 **Request:**
 ```json
@@ -40,18 +40,41 @@ Records upload metadata to RDS database.
 ```json
 {
     "success": true,
-    "message": "Upload recorded in database"
+    "message": "Upload recorded successfully",
+    "fileName": "1234567890-abc123.jpg",
+    "day": 29
 }
 ```
 
-## Environment Variables
+## Tracking File Format
+
+Files are stored in `s3://dingziwei-app-bucket/tracking/YYYY-MM.txt`
+
+Example content:
 ```
-RDS_HOST = your-rds-endpoint.ap-east-1.rds.amazonaws.com
-RDS_USER = admin
-RDS_PASSWORD = your-password
-RDS_DATABASE = dingziwei
+5|s3://dingziwei-app-bucket/uploads/1234567890-abc123.jpg
+10|s3://dingziwei-app-bucket/uploads/1234567890-def456.jpg
+29|s3://dingziwei-app-bucket/uploads/1234567890-ghi789.jpg
+```
+
+Each line: `day|s3_path`
+
+## Environment Variables
+None required! This function only uses S3.
+
+## Permissions
+Lambda needs S3 access:
+```json
+{
+    "Effect": "Allow",
+    "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+    ],
+    "Resource": "arn:aws:s3:::dingziwei-app-bucket/*"
+}
 ```
 
 ## Dependencies
-- aws-sdk
-- mysql2
+- aws-sdk (only)
+

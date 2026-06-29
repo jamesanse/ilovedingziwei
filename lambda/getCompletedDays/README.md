@@ -1,11 +1,11 @@
 # getCompletedDays Lambda
 
-This Lambda function queries the RDS database to get all completed days for the current month.
+This Lambda function reads the S3 tracking file to get all completed days for the current month.
 
 ## Action
 
 ### Query Completed Days
-Retrieves all days in the current month that have at least one upload record.
+Retrieves all days in the current month that have been completed (stored in tracking file).
 
 **Request:**
 ```json
@@ -26,22 +26,25 @@ Retrieves all days in the current month that have at least one upload record.
 ## Usage Flow
 1. Website calls this function on page load
 2. Gets array of completed days
-3. Updates localStorage with completed days
-4. Marks those calendar days as completed
+3. Updates calendar UI to mark those days as completed
+4. If file doesn't exist for month yet, returns empty array
 
-## Environment Variables
-```
-RDS_HOST = your-rds-endpoint.ap-east-1.rds.amazonaws.com
-RDS_USER = admin
-RDS_PASSWORD = your-password
-RDS_DATABASE = dingziwei
-```
+## Environment
+- Bucket: `dingziwei-app-bucket`
+- Tracking file path: `tracking/YYYY-MM.txt`
+- Format: Each line is `day|image-url`
 
-## Features
-- Automatically uses China timezone (UTC+8)
-- Gets current month/year dynamically
-- Returns deduplicated list of completed days
-- Includes completion count
+## Example Tracking File Content
+```
+29|s3://dingziwei-app-bucket/uploads/1234567890-abc123.jpg
+25|s3://dingziwei-app-bucket/uploads/1234567890-def456.jpg
+20|s3://dingziwei-app-bucket/uploads/1234567890-ghi789.jpg
+```
 
 ## Dependencies
-- mysql2
+- aws-sdk
+
+## Error Handling
+- If tracking file doesn't exist yet: Returns empty completedDays array
+- This is normal for the first month
+

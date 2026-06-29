@@ -1,10 +1,10 @@
 {
   "name": "getCompletedDays",
   "version": "1.0.0",
-  "description": "Lambda function to query completed days from RDS",
+  "description": "Lambda function to query completed days from S3 tracking file",
   "main": "index.js",
   "dependencies": {
-    "mysql2": "^3.0.0"
+    "aws-sdk": "^2.0.0"
   },
   "author": "",
   "license": "MIT"

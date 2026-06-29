@@ -1,62 +1,69 @@
-const mysql = require('mysql2/promise');
-
-// RDS connection pool
-let connection;
-
-async function getRDSConnection() {
-    if (connection) {
-        return connection;
-    }
-    
-    connection = await mysql.createConnection({
-        host: process.env.RDS_HOST,
-        user: process.env.RDS_USER,
-        password: process.env.RDS_PASSWORD,
-        database: process.env.RDS_DATABASE,
-        waitForConnections: true,
-        connectionLimit: 5,
-        queueLimit: 0
-    });
-    
-    return connection;
-}
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3({ region: 'ap-east-1' });
 
 exports.handler = async (event) => {
     try {
-        const conn = await getRDSConnection();
-        
         // Get current month and year in China timezone
         const now = new Date();
         const chinaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
         const month = String(chinaTime.getMonth() + 1).padStart(2, '0');
         const year = chinaTime.getFullYear();
+        const monthKey = `${year}-${month}`;
         
-        // Query to get all completed days for current month
-        const query = `
-            SELECT DISTINCT day 
-            FROM uploads 
-            WHERE MONTH(date) = ? AND YEAR(date) = ?
-            ORDER BY day ASC
-        `;
+        // Read tracking file from S3
+        const trackingFileName = `tracking/${monthKey}.txt`;
         
-        const [rows] = await conn.execute(query, [month, year]);
-        
-        // Extract just the day numbers into an array
-        const completedDays = rows.map(row => row.day);
-        
-        return {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-                success: true,
-                month: `${year}-${month}`,
-                completedDays: completedDays,
-                count: completedDays.length
-            })
-        };
+        try {
+            const params = {
+                Bucket: 'dingziwei-app-bucket',
+                Key: trackingFileName
+            };
+            
+            const result = await s3.getObject(params).promise();
+            const fileContent = result.Body.toString('utf-8');
+            
+            // Parse file: each line is "day|image-path"
+            const lines = fileContent.trim().split('\n');
+            const completedDays = lines
+                .map(line => {
+                    const parts = line.split('|');
+                    return parseInt(parts[0]);
+                })
+                .filter(day => !isNaN(day))
+                .sort((a, b) => a - b);
+            
+            return {
+                statusCode: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    month: monthKey,
+                    completedDays: completedDays,
+                    count: completedDays.length
+                })
+            };
+        } catch (error) {
+            // File doesn't exist yet (first month) - return empty list
+            if (error.code === 'NoSuchKey') {
+                return {
+                    statusCode: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        month: monthKey,
+                        completedDays: [],
+                        count: 0
+                    })
+                };
+            }
+            throw error;
+        }
         
     } catch (error) {
         console.error('Error:', error);
