@@ -16,21 +16,31 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) or [QUICK-REFERENCE.md](QUICK-REFERENCE.md) f
 
 ## Architecture
 
-The website uses two Lambda functions that work together:
+The website uses a **single Lambda function** that handles all backend operations:
 
-1. **uploadFunc** - Handles image uploads to S3 and tracking
-2. **getCompletedDays** - Retrieves completed days from S3 tracking file
+1. **uploadFunc** - Multi-action function:
+   - Generates pre-signed URLs for client-side S3 uploads
+   - Records upload metadata to S3 tracking file
+   - Retrieves completed days from tracking file
 
 All data is stored as simple text files in S3 (`tracking/YYYY-MM.txt`), eliminating the need for a database.
 
 ## Functions Overview
 
 ### uploadFunc (`uploadFunc/`)
-Handles S3 image uploads and maintains tracking file.
+Handles S3 image uploads, tracking, and completion queries.
 
-**Two Actions:**
+**Three Actions:**
 1. `getPresignedUrl` - Generate pre-signed URL for client-side S3 upload
 2. `recordUpload` - Record upload metadata to S3 tracking file
+3. `getCompletedDays` - Retrieve completed days for the current month
+
+**Request Example (getPresignedUrl):**
+```json
+{
+    "action": "getPresignedUrl"
+}
+```
 
 **Response Example:**
 ```json
@@ -41,10 +51,14 @@ Handles S3 image uploads and maintains tracking file.
 }
 ```
 
-### getCompletedDays (`getCompletedDays/`)
-Retrieves completed days for the current month.
+**Request Example (getCompletedDays):**
+```json
+{
+    "action": "getCompletedDays"
+}
+```
 
-**Response Example:**
+**Response Example (getCompletedDays):**
 ```json
 {
     "success": true,
@@ -67,65 +81,45 @@ Retrieves completed days for the current month.
 
 ## Deployment Steps
 
-### 1. Prepare Lambda Packages
+**Just run the deployment script!**
+
 ```bash
-cd uploadFunc && npm install && cd ..
-cd getCompletedDays && npm install && cd ..
+cd lambda
+./deploy.sh
 ```
 
-### 2. Create Lambda Functions in AWS Console
-For each function:
-- **Name:** `uploadFunc` or `getCompletedDays`
-- **Runtime:** Node.js 18.x
-- **Handler:** `index.handler`
-- **Code:** Copy from `index.js` in each folder
+The script automatically:
+1. ✅ Creates IAM role with S3 permissions
+2. ✅ Packages and deploys `uploadFunc`
+3. ✅ Creates API Gateway with `/upload` endpoint
+4. ✅ Enables CORS
+5. ✅ Deploys to prod stage
+6. ✅ Outputs the API endpoint
 
-### 3. Configure IAM Role
-Create an execution role with these S3 permissions:
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::dingziwei-app-bucket",
-                "arn:aws:s3:::dingziwei-app-bucket/*"
-            ]
-        }
-    ]
-}
+**Manual deployment is no longer needed** — `deploy.sh` handles all AWS resource creation.
+
+### API Endpoint
+
+After deployment, you'll get an endpoint like:
+```
+https://xxxxx.execute-api.ap-east-1.amazonaws.com/prod
 ```
 
-### 4. Create API Gateway
-Create REST API with endpoints:
-
-| Method | Path | Function |
-|--------|------|----------|
-| POST | `/upload` | uploadFunc |
-| POST | `/completed-days` | getCompletedDays |
-
-- Enable CORS on both endpoints
-- Deploy to stage (e.g., `prod`)
-- Get API base URL: `https://xxxxx.execute-api.ap-east-1.amazonaws.com/prod`
-
-### 5. Update Website
-Update `script.js` to use API Gateway URLs:
-```javascript
-const API_BASE = "https://xxxxx.execute-api.ap-east-1.amazonaws.com/prod";
+All operations go to:
 ```
+POST /upload
+```
+
+with `action` parameter routing to:
+- `action: "getPresignedUrl"` → Generate upload URL
+- `action: "recordUpload"` → Save completion record
+- `action: "getCompletedDays"` → Fetch completed days
 
 ## Cost Analysis
-- **uploadFunc:** ~$0.50/month (pay-per-use, minimal invocations)
-- **getCompletedDays:** ~$0.10/month (called once per page load)
+- **uploadFunc:** ~$0.50/month (3 actions: pre-signed URL, record upload, get completions)
 - **API Gateway:** ~$0.35/month (pay-per-call)
 - **S3 Storage:** ~$0.50/month (tracking files + images)
-- **Total:** ~$1.50/month
+- **Total:** ~$1.35/month
 
 Compare to RDS: RDS alone would cost ~$15/month minimum.
 

@@ -50,10 +50,7 @@ ilovedingziwei/
 │
 ├── lambda/                 # AWS Lambda backend
 │   ├── deploy.sh           # One-command deployment script
-│   ├── uploadFunc/         # Pre-signed URL & upload tracking
-│   │   ├── index.js
-│   │   └── package.json
-│   ├── getCompletedDays/   # Read completion tracking
+│   ├── uploadFunc/         # Multi-action Lambda (upload, tracking, completions)
 │   │   ├── index.js
 │   │   └── package.json
 │   ├── README.md           # Lambda quick start
@@ -88,12 +85,13 @@ ilovedingziwei/
 ## Backend Stack
 
 **AWS Services**
-- **Lambda** (Node.js 18.x)
-  - `uploadFunc` — Generate S3 pre-signed URLs, record uploads
-  - `getCompletedDays` — Read tracking file, return completed days
+- **Lambda** (Node.js 18.x) — Single multi-action function
+  - `uploadFunc` handles all operations:
+    - `getPresignedUrl` — Generate S3 pre-signed URL for direct uploads
+    - `recordUpload` — Write completion to S3 tracking file
+    - `getCompletedDays` — Read tracking file, return completed days array
 - **API Gateway** (REST)
-  - `POST /upload` → uploadFunc
-  - `POST /completed-days` → getCompletedDays
+  - `POST /upload` → uploadFunc (routes via `action` parameter)
 - **S3** (ap-east-1)
   - Image storage: `dingziwei-app-bucket/uploads/`
   - Tracking files: `dingziwei-app-bucket/tracking/YYYY-MM.txt`
@@ -134,12 +132,11 @@ cd lambda
 **What deploy.sh does:**
 1. Creates/reuses IAM role `dingziwei-lambda-role`
 2. Installs npm deps, zips, deploys `uploadFunc`
-3. Deploys `getCompletedDays`
-4. Creates API Gateway `dingziwei-api`
-5. Configures `/upload` and `/completed-days` endpoints
-6. Enables CORS
-7. Deploys to `prod` stage
-8. Outputs API endpoint URL
+3. Creates API Gateway `dingziwei-api` with `/upload` endpoint
+4. Configures Lambda integration and method routing
+5. Enables CORS on all endpoints
+6. Deploys to `prod` stage
+7. Outputs API endpoint URL
 
 **Requirements**
 - AWS CLI configured with credentials

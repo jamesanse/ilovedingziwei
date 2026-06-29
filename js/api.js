@@ -2,17 +2,18 @@
 
 const API_BASE_URL = 'https://0awq3ahyhi.execute-api.ap-east-1.amazonaws.com/prod';
 const UPLOAD_API_URL = API_BASE_URL + '/upload';
-const COMPLETED_DAYS_API_URL = API_BASE_URL + '/completed-days';
 
 // Fetch completed days from Lambda
 async function fetchCompletedDays() {
     try {
-        const response = await fetch(COMPLETED_DAYS_API_URL, {
+        const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+                action: 'getCompletedDays'
+            })
         });
         
         const data = await response.json();

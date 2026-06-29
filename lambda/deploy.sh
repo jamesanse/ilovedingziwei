@@ -12,7 +12,6 @@ echo "==================================="
 # Configuration
 REGION="ap-east-1"
 FUNCTION_NAME_UPLOAD="uploadFunc"
-FUNCTION_NAME_COMPLETED="getCompletedDays"
 API_NAME="dingziwei-api"
 S3_BUCKET="dingziwei-app-bucket"
 STAGE="prod"
@@ -133,13 +132,8 @@ cd "$SCRIPT_DIR/uploadFunc"
 npm install --silent 2>/dev/null || true
 cd - > /dev/null
 
-cd "$SCRIPT_DIR/getCompletedDays"
-npm install --silent 2>/dev/null || true
-cd - > /dev/null
-
-# Deploy both functions
+# Deploy function
 deploy_function "$FUNCTION_NAME_UPLOAD" "$SCRIPT_DIR/uploadFunc" "Handle S3 uploads and track completed days"
-deploy_function "$FUNCTION_NAME_COMPLETED" "$SCRIPT_DIR/getCompletedDays" "Get completed days from S3 tracking"
 
 sleep 2
 
@@ -244,9 +238,8 @@ create_resource() {
     echo -e "${GREEN}✓ Resource /$resource_name configured${NC}"
 }
 
-# Create both resources
+# Create resource
 create_resource "upload" $FUNCTION_NAME_UPLOAD
-create_resource "completed-days" $FUNCTION_NAME_COMPLETED
 
 sleep 2
 
@@ -287,12 +280,10 @@ enable_cors() {
         --region $REGION > /dev/null 2>&1 || true
 }
 
-# Get resource IDs for both endpoints
+# Get resource ID for upload endpoint
 UPLOAD_RESOURCE=$(aws apigateway get-resources --rest-api-id $API_ID --region $REGION --query "items[?pathPart=='upload'].id" --output text)
-COMPLETED_RESOURCE=$(aws apigateway get-resources --rest-api-id $API_ID --region $REGION --query "items[?pathPart=='completed-days'].id" --output text)
 
 enable_cors $UPLOAD_RESOURCE
-enable_cors $COMPLETED_RESOURCE
 enable_cors $ROOT_ID
 
 echo -e "${GREEN}✓ CORS enabled${NC}"
