@@ -245,7 +245,46 @@ create_resource "upload" $FUNCTION_NAME_UPLOAD
 
 sleep 2
 
-echo -e "\n${BLUE}Step 4: API Gateway configured${NC}"
+echo -e "\n${BLUE}Step 4: Configuring OPTIONS for CORS...${NC}"
+
+# Add simple MOCK OPTIONS method to /upload resource for CORS preflight
+UPLOAD_RESOURCE=$(aws apigateway get-resources --rest-api-id $API_ID --region $REGION --query "items[?pathPart=='upload'].id" --output text)
+
+# Create OPTIONS method
+aws apigateway put-method \
+    --rest-api-id $API_ID \
+    --resource-id $UPLOAD_RESOURCE \
+    --http-method OPTIONS \
+    --authorization-type NONE \
+    --region $REGION > /dev/null 2>&1 || true
+
+# Create MOCK integration (no Lambda needed, just return empty)
+aws apigateway put-integration \
+    --rest-api-id $API_ID \
+    --resource-id $UPLOAD_RESOURCE \
+    --http-method OPTIONS \
+    --type MOCK \
+    --region $REGION > /dev/null 2>&1 || true
+
+# Create method response
+aws apigateway put-method-response \
+    --rest-api-id $API_ID \
+    --resource-id $UPLOAD_RESOURCE \
+    --http-method OPTIONS \
+    --status-code 200 \
+    --response-parameters "method.response.header.Access-Control-Allow-Headers=true,method.response.header.Access-Control-Allow-Methods=true,method.response.header.Access-Control-Allow-Origin=true" \
+    --region $REGION > /dev/null 2>&1 || true
+
+# Create integration response with CORS headers
+aws apigateway put-integration-response \
+    --rest-api-id $API_ID \
+    --resource-id $UPLOAD_RESOURCE \
+    --http-method OPTIONS \
+    --status-code 200 \
+    --response-parameters "method.response.header.Access-Control-Allow-Headers='Content-Type,Authorization',method.response.header.Access-Control-Allow-Methods='GET,POST,OPTIONS',method.response.header.Access-Control-Allow-Origin='*'" \
+    --region $REGION > /dev/null 2>&1 || true
+
+echo -e "${GREEN}✓ CORS configured${NC}"
 
 sleep 2
 
