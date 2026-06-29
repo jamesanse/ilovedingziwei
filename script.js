@@ -222,8 +222,13 @@ function generateCalendar() {
     const now = new Date();
     const chinaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
     const currentDay = chinaTime.getDate();
+    const currentMonth = chinaTime.getMonth();
+    const currentYear = chinaTime.getFullYear();
     
-    for (let i = 1; i <= 31; i++) {
+    // Get the number of days in the current month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    for (let i = 1; i <= daysInMonth; i++) {
         const dayEl = document.createElement('div');
         dayEl.className = 'calendar-day';
         dayEl.textContent = i;
