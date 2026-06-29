@@ -1,7 +1,34 @@
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3({ region: 'ap-east-1' });
 
+// Helper function to return response with CORS headers
+function createResponse(statusCode, body) {
+    return {
+        statusCode: statusCode,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+        },
+        body: JSON.stringify(body)
+    };
+}
+
 exports.handler = async (event) => {
+    // Handle OPTIONS preflight
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+            },
+            body: ''
+        };
+    }
+
     try {
         const body = event.body ? JSON.parse(event.body) : event;
         
@@ -20,18 +47,11 @@ exports.handler = async (event) => {
             
             const uploadURL = s3.getSignedUrl('putObject', params);
             
-            return {
-                statusCode: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({
-                    uploadURL: uploadURL,
-                    fileName: fileName,
-                    s3Path: `s3://dingziwei-app-bucket/uploads/${fileName}`
-                })
-            };
+            return createResponse(200, {
+                uploadURL: uploadURL,
+                fileName: fileName,
+                s3Path: `s3://dingziwei-app-bucket/uploads/${fileName}`
+            });
         } 
         else if (body.action === 'recordUpload') {
             // Record upload to month's text file in S3
@@ -82,29 +102,15 @@ exports.handler = async (event) => {
                 
                 await s3.putObject(putParams).promise();
                 
-                return {
-                    statusCode: 200,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({
-                        success: true,
-                        message: 'Upload recorded successfully',
-                        fileName: fileName,
-                        day: day
-                    })
-                };
+                return createResponse(200, {
+                    success: true,
+                    message: 'Upload recorded successfully',
+                    fileName: fileName,
+                    day: day
+                });
             } catch (s3Error) {
                 console.error('S3 Error:', s3Error);
-                return {
-                    statusCode: 500,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({ error: 'Failed to record upload: ' + s3Error.message })
-                };
+                return createResponse(500, { error: 'Failed to record upload: ' + s3Error.message });
             }
         }
         else if (body.action === 'getCompletedDays') {
@@ -135,41 +141,20 @@ exports.handler = async (event) => {
                     completedDays = [];
                 }
                 
-                return {
-                    statusCode: 200,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({
-                        success: true,
-                        month: `${year}-${month}`,
-                        completedDays: completedDays
-                    })
-                };
+                return createResponse(200, {
+                    success: true,
+                    month: `${year}-${month}`,
+                    completedDays: completedDays
+                });
             } catch (err) {
                 console.error('Error fetching completed days:', err);
-                return {
-                    statusCode: 500,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({ error: err.message })
-                };
+                return createResponse(500, { error: err.message });
             }
         }
         
         
     } catch (error) {
         console.error('Error:', error);
-        return {
-            statusCode: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: error.message })
-        };
+        return createResponse(500, { error: error.message });
     }
 };
