@@ -245,54 +245,7 @@ create_resource "upload" $FUNCTION_NAME_UPLOAD
 
 sleep 2
 
-# Step 4: Enable CORS (OPTIONS routes through Lambda)
-echo -e "\n${BLUE}Step 4: Enabling CORS via Lambda...${NC}"
-
-# Get Lambda ARN for permission
-LAMBDA_ARN=$(aws lambda get-function \
-    --function-name $FUNCTION_NAME_UPLOAD \
-    --region $REGION \
-    --query 'Configuration.FunctionArn' \
-    --output text)
-
-# Create OPTIONS method that routes to Lambda (like POST does)
-create_options_method() {
-    local resource_id=$1
-    
-    # Create OPTIONS method
-    aws apigateway put-method \
-        --rest-api-id $API_ID \
-        --resource-id $resource_id \
-        --http-method OPTIONS \
-        --authorization-type NONE \
-        --region $REGION > /dev/null 2>&1 || true
-    
-    # Create Lambda integration for OPTIONS
-    aws apigateway put-integration \
-        --rest-api-id $API_ID \
-        --resource-id $resource_id \
-        --http-method OPTIONS \
-        --type AWS_PROXY \
-        --integration-http-method POST \
-        --uri "arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${LAMBDA_ARN}/invocations" \
-        --region $REGION > /dev/null 2>&1 || true
-    
-    # Grant Lambda permission for OPTIONS
-    aws lambda add-permission \
-        --function-name $FUNCTION_NAME_UPLOAD \
-        --statement-id apigateway-options-$resource_id \
-        --action lambda:InvokeFunction \
-        --principal apigateway.amazonaws.com \
-        --region $REGION 2>/dev/null || true
-}
-
-# Get resource ID for upload endpoint
-UPLOAD_RESOURCE=$(aws apigateway get-resources --rest-api-id $API_ID --region $REGION --query "items[?pathPart=='upload'].id" --output text)
-
-create_options_method $UPLOAD_RESOURCE
-create_options_method $ROOT_ID
-
-echo -e "${GREEN}✓ CORS enabled${NC}"
+echo -e "\n${BLUE}Step 4: API Gateway configured${NC}"
 
 sleep 2
 

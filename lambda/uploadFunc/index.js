@@ -16,21 +16,26 @@ function createResponse(statusCode, body) {
 }
 
 exports.handler = async (event) => {
-    // Handle OPTIONS preflight
-    if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
-            },
-            body: ''
-        };
-    }
-
+    // Always return CORS headers
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+    };
+    
     try {
-        const body = event.body ? JSON.parse(event.body) : event;
+        // Handle OPTIONS preflight request
+        const method = event.httpMethod || (event.requestContext && event.requestContext.httpMethod) || '';
+        
+        if (method === 'OPTIONS' || !event.body) {
+            return {
+                statusCode: 200,
+                headers: corsHeaders,
+                body: ''
+            };
+        }
+        
+        const body = JSON.parse(event.body);
         
         if (body.action === 'getPresignedUrl') {
             // Generate pre-signed URL for upload
