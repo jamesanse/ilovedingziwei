@@ -1,10 +1,9 @@
 {
-  "name": "dingziwei-lambda",
+  "name": "getCompletedDays",
   "version": "1.0.0",
-  "description": "Lambda function for S3 uploads and RDS logging",
+  "description": "Lambda function to query completed days from RDS",
   "main": "index.js",
   "dependencies": {
-    "aws-sdk": "^2.0.0",
     "mysql2": "^3.0.0"
   },
   "author": "",
