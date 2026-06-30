@@ -151,13 +151,14 @@ exports.handler = async (event) => {
              * 2. Parse month/year to construct tracking file name
              * 3. Read existing tracking/{YYYY-MM}.txt (if exists)
              * 4. Check if day already exists (prevent duplicate entries)
-             * 5. If new: append "day|s3Path\n" to file
+             * 5. If exists: replace the entry with new s3Path
+             *    If new: append "day|s3Path\n" to file
              * 6. Write updated file back to S3
              * 
              * RESILIENCE:
              * - Month/year passed from frontend (not derived in Lambda)
              * - Prevents timezone bugs that could cause wrong month file
-             * - Idempotent: only appends if day doesn't exist
+             * - Allows overwriting if same day is uploaded again
              * - Handles NoSuchKey gracefully (first upload of month)
              */
             const { fileName, s3Path, day, month, year } = body;
@@ -183,9 +184,13 @@ exports.handler = async (event) => {
                 
                 // Check if day already exists in file
                 const lines = fileContent.split('\n').filter(line => line.trim());
-                const dayExists = lines.some(line => line.startsWith(day + '|'));
+                const dayIndex = lines.findIndex(line => line.startsWith(day + '|'));
                 
-                if (!dayExists) {
+                if (dayIndex !== -1) {
+                    // Replace existing entry
+                    lines[dayIndex] = `${day}|${s3Path}`;
+                    fileContent = lines.join('\n') + '\n';
+                } else {
                     // Append new entry
                     if (fileContent && !fileContent.endsWith('\n')) {
                         fileContent += '\n';
