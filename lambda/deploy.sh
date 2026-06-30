@@ -81,6 +81,23 @@ aws iam put-role-policy \
     --policy-document "$POLICY_DOCUMENT" 2>/dev/null || echo "Policy already attached"
 
 echo -e "${GREEN}✓ S3 permissions configured${NC}"
+
+# Enable CORS on S3 bucket for direct browser uploads
+echo "Configuring S3 CORS..."
+CORS_CONFIG='{
+  "CORSRules": [
+    {
+      "AllowedHeaders": ["*"],
+      "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+      "AllowedOrigins": ["*"],
+      "ExposeHeaders": ["x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+}'
+aws s3api put-bucket-cors --bucket $S3_BUCKET --cors-configuration "$CORS_CONFIG" --region $REGION 2>/dev/null || true
+echo -e "${GREEN}✓ S3 CORS configured${NC}"
+
 sleep 2
 
 # Step 2: Package and deploy Lambda functions
