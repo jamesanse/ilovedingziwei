@@ -4,16 +4,24 @@ const API_BASE_URL = 'https://0awq3ahyhi.execute-api.ap-east-1.amazonaws.com/pro
 const UPLOAD_API_URL = API_BASE_URL + '/upload';
 
 // Fetch completed days from Lambda
-async function fetchCompletedDays() {
+async function fetchCompletedDays(year, month) {
     try {
+        const body = {
+            action: 'getCompletedDays'
+        };
+        
+        // Optionally include year and month for resilience
+        if (year && month) {
+            body.year = year;
+            body.month = month;
+        }
+        
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                action: 'getCompletedDays'
-            })
+            body: JSON.stringify(body)
         });
         
         const data = await response.json();
@@ -50,7 +58,7 @@ async function getPresignedUrl(fileExtension, mimeType) {
 }
 
 // Record upload to S3 tracking file
-async function recordUpload(fileName, s3Path, day) {
+async function recordUpload(fileName, s3Path, day, month, year) {
     try {
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
@@ -61,7 +69,9 @@ async function recordUpload(fileName, s3Path, day) {
                 action: 'recordUpload',
                 fileName: fileName,
                 s3Path: s3Path,
-                day: day
+                day: day,
+                month: month,
+                year: year
             })
         });
         
@@ -71,4 +81,30 @@ async function recordUpload(fileName, s3Path, day) {
         console.error('Error recording upload:', error);
         throw error;
     }
+}
+
+// Get image URL for a specific day
+async function getImageUrl(year, month, day) {
+    try {
+        const response = await fetch(UPLOAD_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'getImageUrl',
+                year: year,
+                month: month,
+                day: day
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            return data.imageUrl;
+        }
+    } catch (error) {
+        console.error('Error getting image URL:', error);
+    }
+    return null;
 }

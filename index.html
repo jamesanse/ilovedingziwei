@@ -33,7 +33,11 @@
     <div class="daily-modal" id="dailyModal">
         <div class="daily-modal-content">
             <button class="daily-modal-close" id="dailyModalClose">&times;</button>
+            <p class="selected-date" id="selectedDateDisplay"></p>
             <p class="daily-task">发一篇关于你去过地方的小红书， 配上美图和文字</p>
+            <div class="completed-image-container" id="completedImageContainer" style="display: none;">
+                <img id="completedImage" alt="Completed upload" style="max-width: 100%; max-height: 400px; border-radius: 8px; margin: 15px 0;">
+            </div>
             <input type="file" id="imageInput" accept="image/*" style="display: none;">
             <button class="daily-upload-btn" id="dailyUploadBtn">完成任务并上传图片证明</button>
             <p class="upload-status" id="uploadStatus"></p>

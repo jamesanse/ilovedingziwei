@@ -5,7 +5,13 @@ const imageInput = document.getElementById('imageInput');
 const uploadStatus = document.getElementById('uploadStatus');
 const calendarGrid = document.getElementById('calendarGrid');
 
-let currentSelectedDay = null;
+// Store selected date (year, month, day) when user clicks on a day
+let selectedDate = {
+    year: null,
+    month: null,
+    day: null
+};
+let currentSelectedDay = null; // Deprecated: use selectedDate.day instead
 let completedDaysCache = [];
 
 // Chinese month names
@@ -56,7 +62,15 @@ function generateCalendar() {
         }
         
         dayEl.addEventListener('click', function() {
+            // Store selected date
             currentSelectedDay = i;
+            selectedDate.day = i;
+            selectedDate.month = currentMonth + 1; // Months are 0-indexed
+            selectedDate.year = currentYear;
+            
+            // Update date display in modal
+            const dateDisplay = document.getElementById('selectedDateDisplay');
+            dateDisplay.textContent = `${selectedDate.year}年 ${String(selectedDate.month).padStart(2, '0')}月 ${String(i).padStart(2, '0')}日`;
             
             // Check if day already completed
             if (completedDaysCache.includes(i)) {
@@ -65,6 +79,19 @@ function generateCalendar() {
                 dailyUploadBtn.disabled = true;
                 dailyUploadBtn.style.opacity = '0.5';
                 dailyUploadBtn.style.cursor = 'not-allowed';
+                
+                // Fetch and display the completed image using stored selected date
+                getImageUrl(selectedDate.year, selectedDate.month, selectedDate.day).then(imageUrl => {
+                    if (imageUrl) {
+                        const completedImageContainer = document.getElementById('completedImageContainer');
+                        const completedImage = document.getElementById('completedImage');
+                        completedImage.src = imageUrl;
+                        completedImageContainer.style.display = 'block';
+                    }
+                }).catch(error => {
+                    console.error('Error fetching image:', error);
+                });
+                
                 dailyModal.classList.add('show');
             } else {
                 dailyModal.classList.add('show');
@@ -73,6 +100,10 @@ function generateCalendar() {
                 dailyUploadBtn.disabled = false;
                 dailyUploadBtn.style.opacity = '1';
                 dailyUploadBtn.style.cursor = 'pointer';
+                
+                // Hide completed image container
+                const completedImageContainer = document.getElementById('completedImageContainer');
+                completedImageContainer.style.display = 'none';
             }
         });
         
@@ -148,7 +179,9 @@ imageInput.addEventListener('change', async function(e) {
             
             // Step 3: Record upload to tracking file
             uploadStatus.textContent = '保存记录...';
-            const recordData = await recordUpload(fileName, s3Path, currentSelectedDay);
+            
+            // Use stored selected date (year, month, day)
+            const recordData = await recordUpload(fileName, s3Path, selectedDate.day, selectedDate.month, selectedDate.year);
             
             if (recordData.success) {
                 uploadStatus.textContent = '✓ 上传成功！';
@@ -175,7 +208,15 @@ imageInput.addEventListener('change', async function(e) {
 // Initialize calendar on page load
 async function initializeCalendar() {
     displayMonth();
-    completedDaysCache = await fetchCompletedDays();
+    
+    // Get current date in Asia/Shanghai timezone
+    const now = new Date();
+    const chinaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const year = chinaTime.getFullYear();
+    const month = chinaTime.getMonth() + 1;
+    
+    // Fetch completed days with year/month for resilience
+    completedDaysCache = await fetchCompletedDays(year, month);
     generateCalendar();
 }
 
