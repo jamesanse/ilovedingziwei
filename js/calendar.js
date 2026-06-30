@@ -57,9 +57,23 @@ function generateCalendar() {
         
         dayEl.addEventListener('click', function() {
             currentSelectedDay = i;
-            dailyModal.classList.add('show');
-            uploadStatus.textContent = '';
-            imageInput.value = '';
+            
+            // Check if day already completed
+            if (completedDaysCache.includes(i)) {
+                uploadStatus.textContent = '✓ 已完成（今天只能上传一次）';
+                uploadStatus.className = 'upload-status success';
+                dailyUploadBtn.disabled = true;
+                dailyUploadBtn.style.opacity = '0.5';
+                dailyUploadBtn.style.cursor = 'not-allowed';
+                dailyModal.classList.add('show');
+            } else {
+                dailyModal.classList.add('show');
+                uploadStatus.textContent = '';
+                imageInput.value = '';
+                dailyUploadBtn.disabled = false;
+                dailyUploadBtn.style.opacity = '1';
+                dailyUploadBtn.style.cursor = 'pointer';
+            }
         });
         
         calendarGrid.appendChild(dayEl);
@@ -85,6 +99,15 @@ dailyUploadBtn.addEventListener('click', function() {
 // Handle file selection
 imageInput.addEventListener('change', async function(e) {
     const file = e.target.files[0];
+    if (!file) return;
+    
+    // Prevent re-upload on same day
+    if (completedDaysCache.includes(currentSelectedDay)) {
+        uploadStatus.textContent = '✗ 今天已上传过了！';
+        uploadStatus.className = 'upload-status error';
+        return;
+    }
+    
     if (file) {
         uploadStatus.textContent = '获取上传链接...';
         uploadStatus.className = 'upload-status';

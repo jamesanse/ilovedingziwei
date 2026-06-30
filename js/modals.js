@@ -42,6 +42,13 @@ document.addEventListener('keydown', function(event) {
 if (dailyModalClose) {
     dailyModalClose.addEventListener('click', function() {
         dailyModal.classList.remove('show');
+        // Reset upload button
+        const dailyUploadBtn = document.getElementById('dailyUploadBtn');
+        if (dailyUploadBtn) {
+            dailyUploadBtn.disabled = false;
+            dailyUploadBtn.style.opacity = '1';
+            dailyUploadBtn.style.cursor = 'pointer';
+        }
     });
 }
 
@@ -50,6 +57,13 @@ if (dailyModal) {
     dailyModal.addEventListener('click', function(e) {
         if (e.target === dailyModal) {
             dailyModal.classList.remove('show');
+            // Reset upload button
+            const dailyUploadBtn = document.getElementById('dailyUploadBtn');
+            if (dailyUploadBtn) {
+                dailyUploadBtn.disabled = false;
+                dailyUploadBtn.style.opacity = '1';
+                dailyUploadBtn.style.cursor = 'pointer';
+            }
         }
     });
 }
@@ -58,6 +72,13 @@ if (dailyModal) {
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape' && dailyModal && dailyModal.classList.contains('show')) {
         dailyModal.classList.remove('show');
+        // Reset upload button
+        const dailyUploadBtn = document.getElementById('dailyUploadBtn');
+        if (dailyUploadBtn) {
+            dailyUploadBtn.disabled = false;
+            dailyUploadBtn.style.opacity = '1';
+            dailyUploadBtn.style.cursor = 'pointer';
+        }
     }
 });
 
